@@ -19,14 +19,15 @@ class loginComentarios:
     
     def __init__(self,id_facebook, email, pas):
          self.id_facebook=id_facebook
-         self.respuesta_comentarios =[]
-         self.comentarios=[]
          self.htmls=[]
          self.total=0
          self.url_respuestas=[]
          self.browser=self.login(email, pas)
          self.comentario_anterior=0
          self.respuesta=self.vector_respuestas_comentarios(100)
+         
+         self.comentarios_dic={}
+         self.respuestas_dic={}
          
          
     def login(self, email, pas):
@@ -79,9 +80,15 @@ class loginComentarios:
         soup =bs4(res , 'html.parser')
         
         filtrado=soup.findAll('div', {'class':self.encontrar_class_comentarios(soup)})
+        users, urls = self.encontrar_nombre_usuarios(soup, 0)
+        respuestas=[]
         for i in range(1,len(filtrado)):
             self.total +=1
-            self.respuesta_comentarios.append(filtrado[i].text)
+            if not filtrado[i].text =='':
+                datos_usuario =[users[i],filtrado[i].text,urls[i]]
+                respuestas.append(datos_usuario)
+                
+        self.respuestas_dic[filtrado[0].text]=respuestas
         
         tags_a=soup.findAll("a")
         for i in tags_a:
@@ -112,9 +119,14 @@ class loginComentarios:
         print("Comentarios anteriores = ", self.comentario_anterior)
         try:
             comments = soup.findAll('div', {'class':self.encontrar_class_comentarios(soup)})
-            for i in comments:
+            users, urls= self.encontrar_nombre_usuarios(soup, 1)
+            for i in range(0, len(comments)):
                 self.total +=1
-                self.comentarios.append(i.text)
+                if not comments[i].text=='':
+                    #datos_usuario=[users[i],comments[i].text, urls[i]]
+                    datos_ususario_dic=[users[i], urls[i]]
+                    self.comentarios_dic[comments[i].text]= datos_ususario_dic
+                    #self.comentarios.append(datos_usuario)
         except:
             print("No mas comentarios")
         
@@ -144,39 +156,73 @@ class loginComentarios:
         except:
             print('')
             
-    
+    def encontrar_nombre_usuarios(self, html, pagina):
+        selector = 'h3 a '
+        found = html.select(selector)
+        cont_1=0
+        users=[]
+        url=[]
+        for i in found:
+            #print(i,"\n")
+            if pagina ==0: #unicamente para la primera pagina de comentarios
+                users.append(i.text)
+                url.append("https://www.facebook.com"+i['href'])
+            else:
+                if cont_1 >0:            
+                    users.append(i.text)
+                    url.append("https://www.facebook.com"+i['href'])
+            cont_1 +=1
+        return users, url
+
+    def obtener_reacciones(self,url):
+        self.browser.get(url)
+        res =self.browser.page_source
+        soup2 =bs4(res , 'html.parser')
+        
+        reac = soup2.findAll('span', {'class':'_10tn'})
+        alegra,asombra,encanta,entristese,importa,like,enoja=0,0,0,0,0,0,0
+        for i in reac:
+            if i['data-store'] =='{"reactionType":4}':
+                alegra=i.text
+            if i['data-store'] =='{"reactionType":3}':
+                asombra=i.text
+            if i['data-store'] =='{"reactionType":2}':
+                encanta=i.text
+            if i['data-store'] =='{"reactionType":7}':
+                entristese=i.text
+            if i['data-store'] =='{"reactionType":16}':
+                importa=i.text
+            if i['data-store'] =='{"reactionType":1}':
+                like=i.text
+            if i['data-store'] =='{"reactionType":8}':
+                enoja=i.text
+        reacciones=[alegra,asombra,encanta,entristese,importa,like,enoja]
+        return reacciones
     def obtener_comentarios(self):
         #id='3979298638823457'
         url='https://mbasic.facebook.com/photo?fbid='+self.id_facebook
         cont =0
         cont2 = 0
+        cont_reacciones=0
         more_comments=''
         id_siguiente, id_anterior = 0,0
         lista_urls=[]
         #respuesta=self.vector_respuestas_comentarios(100)
-        
+        nombre_publicacion=''
         while True:
             if cont >1:
                 if  url in lista_urls:
                     print("entra salir")
                     break
-            
             #res =requests.get(url)
             self.browser.get(url)
             res=self.browser.page_source
             soup =bs4(res , 'html.parser')
             lista_urls.append(url)
-            print("Url actual = ",url,"\n")
-            if cont >0:
-                print('')
-                #id_anterior=self.separar_id_pagina_comentarios(url)
-                #soup = soup.find('div', {'id':'m_story_permalink_view'})
-            else:
-                #unicamente para obtener los comentarios de la primera pagina de la publicacion 
-                comments = soup.findAll('div', {'class':'_14ye'})
-                for i in comments:
-                    self.total +=1
-                    self.comentarios.append(i.text)
+            #print("Url actual = ",url,"\n")
+            if cont==0:
+                titulo=soup.title.string
+          
             self.htmls.append(soup)
             # para encontrar el link de direccionamiento hacia los otros comentarios 
             # en base a la etiqueta 'a' 
@@ -193,20 +239,15 @@ class loginComentarios:
                 
                 # solamente si es la primera pagina y tiene comentarios anteriores 
                 if cont ==0:
+                    if i['href'].startswith('/ufi/reaction') and cont_reacciones==0:
+                        url_reaccion='https://m.facebook.com'+i['href']
+                        reacciones=self.obtener_reacciones(url_reaccion)
+                        cont_reacciones +=1
+                    
                     if text ==' View previous comments...':
                         url_anterior='https://mbasic.facebook.com'+i['href']
-                        
                         self.obtener_comentarios_anteriores(url_anterior)
                         
-                #else:
-                    #obtener siguiente pagina comentarios unicamente primera pagina de comentarios 
-                #    link2 =soup.find('div', {'class':'_55wr async_elem'})
-                #    try:
-                #       more_comments = link2.find('a').get('href')
-                #    except:
-                #        print("No hay mas comentarios")
-                #        break
-                
                 
                 sep=i.text.split("·")  
                 
@@ -224,47 +265,46 @@ class loginComentarios:
             cont +=1
             cont2 =0 #reiniciamos contador para obtener el url de la siguiente pagina 'ver mas comentarios'
             url='https://mbasic.facebook.com'+more_comments
-            #id_siguiente = self.separar_id_pagina_comentarios(url)
     
-            #print("Anterior: ",id_anterior," Siguiente: ",id_siguiente)
             print("Comentarios pagina = ",cont+1)
+        return titulo, reacciones
             
     def obtener_comentarios_paginas(self):
         print("Obteniedo comentarios paginas ")
         cont_com=0
         for j in self.htmls:
-            if cont_com >0:
-                try:
-                    comments = j.findAll('div', {'class':self.encontrar_class_comentarios(j)})
-                    for i in comments:
-                        self.total +=1
-                        #if not i.text in self.comentarios:
-                        if not i.text =='':
-                            self.comentarios.append(i.text)
-                except:
-                    break
+            try:
+                comments = j.findAll('div', {'class':self.encontrar_class_comentarios(j)})
+                users, urls = self.encontrar_nombre_usuarios(j, cont_com)
+                for i in range(0,len(comments)):
+                    self.total +=1
+                    if not comments[i].text =='':
+                        datos_usuario_dic=[users[i],urls[i]]
+                        self.comentarios_dic[comments[i].text]=datos_usuario_dic
+                
+            except:
+                break
             cont_com += 1
             
-        return self.comentarios
-
-    def guardar_respuesta_comentarios(self):
-        for html in self.htmls:
-            rs=self.urls_respuestas_comentarios(html)
-            if  rs != []:
-                for i in rs:
-                    self.obtener_comentarios_respuesta_comentarios(i)
-        print("total comentarios = ",self.total)
-        return self.respuesta_comentarios
+        return self.comentarios_dic
     
-    def guardar_respuesta_comentarios2(self):
+    def guardar_respuesta_comentarios(self):
         print("Obteniendo comentarios respuestas")
         if  self.url_respuestas != []:
             for i in self.url_respuestas:
                 self.obtener_comentarios_respuesta_comentarios(i)
-        print("total comentarios = ",self.total)
-        self.browser.quit()
+        
+        
+        #eliminar memoria y brower
+        
+        #del .....eliminar cosas en memoria
+        
         self.browser.close()
-        return self.respuesta_comentarios
+        self.concatenar_diccionarios()
+        return self.total, self.respuestas_dic
+
     
-    
-    
+    def concatenar_diccionarios(self):
+        for key in self.comentarios_dic:
+            if key in self.respuestas_dic:
+                self.comentarios_dic[key].append(self.respuestas_dic[key])

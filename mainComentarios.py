@@ -9,43 +9,67 @@ import pandas as pd
 import numpy as np
 
 import loginComentarios
+import conexionBase
 
-def obtenerCom():
-    #4561570650533328 noticia marinos
-    #4562003263823400
-    #166475175361071
-    
-    #4556360867720973  noticioa comercio mas 2.6k 
-    id_publi='4712305442149214'
-    com=obtenerComentarios.Comentarios(id_publi)
-    com.obtener_comentarios()
-    
-    comentarios=com.obtener_comentarios_paginas()
-    
-    respuestas_comentarios=com.guardar_respuesta_comentarios2()
-    
-    print("Total Comentarios = ",(len(comentarios)+len(respuestas_comentarios)+1),"\n")
-    #print(respuestas_comentarios)
-    
-    todo=comentarios+respuestas_comentarios
-    todo=np.asarray(todo)
-    df = pd.DataFrame(todo)
-    
-    df.to_csv('datos.csv')
-
+def guardarBase(sql,datos, tipo):
+      #### guardar publicacion
+    con=conexionBase.Conexion('localhost','root','','tesis')
+    if tipo ==0:
+        cursor=con.guardar(sql, datos, tipo)
+        return cursor.lastrowid
+    else:
+        cursor=con.guardar(sql, datos, tipo)
+        
 def loginComentario(email,pas, id_face):
     
     log=loginComentarios.loginComentarios(id_face, email, pas)
-    log.obtener_comentarios()
-    comentarios=log.obtener_comentarios_paginas()
+    nombre_publicacion, reacciones=log.obtener_comentarios()
+    com_dic=log.obtener_comentarios_paginas()
     
-    respuestas_comentarios=log.guardar_respuesta_comentarios2()
+    total, res=log.guardar_respuesta_comentarios()
     
-    print("Total Comentarios = ",(len(comentarios)+len(respuestas_comentarios)+1),"\n")
-    todo=comentarios+respuestas_comentarios
-    todo=np.asarray(todo)
-    df = pd.DataFrame(todo)
-    df.to_csv('datos2.csv')
+    val=[]
+    comentario_respuestas=[]
+    con=conexionBase.Conexion('localhost','root','','tesis')
+    id_empresa=1000
+    url_publicacion='https://www.facebook.com/photo?fbid='+id_face
+    datos=( id_face, nombre_publicacion, url_publicacion,reacciones[0],reacciones[1],reacciones[2],reacciones[3],
+           reacciones[4],reacciones[5],reacciones[6],id_empresa)
+    
+    id_publicacion=guardarBase("INSERT INTO publicacion (id_facebook,nombre_publicacion,url_publicacion,alegra,asombra,encanta,entristese,importa,gusta,enoja,id_empresa) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", datos, 0)
+    
+    
+    print("Total ", total)
+
+    for key in com_dic:
+        if len(com_dic[key])>2:
+            
+            dato=( com_dic[key][0],key,com_dic[key][1],id_publicacion)
+            id_com=guardarBase("INSERT INTO comentarios (nombre_usuario,detalle_comentario, perfil_usuario_comentario, id_publicacion) VALUES (%s,%s,%s,%s)",dato,0)
+            
+            if len(com_dic[key][2])>=1:
+                for i in com_dic[key][2]:
+                    dato_respuesta=( i[0],i[1],i[2],id_com)
+                    comentario_respuestas.append(dato_respuesta)
+                           
+            else:
+                for i in com_dic[key][2]:
+                    dato_respuesta=( i[0],i[1],i[2],id_com)
+                    cursor=guardarBase("INSERT INTO respuesta_comentarios (nombre_usuario,detalle_respuesta, perfil_usuario_respuesta, id_comentario) VALUES (%s,%s,%s,%s)", dato_respuesta,0)
+
+        else:
+            dato=(com_dic[key][0],key,com_dic[key][1],id_publicacion)
+            val.append(dato)
+    cursor=guardarBase("INSERT INTO respuesta_comentarios (nombre_usuario,detalle_respuesta, perfil_usuario_respuesta, id_comentario) VALUES (%s,%s,%s,%s)", comentario_respuestas,1)
+    cursor=guardarBase("INSERT INTO comentarios (nombre_usuario,detalle_comentario, perfil_usuario_comentario, id_publicacion) VALUES (%s,%s,%s,%s)", val,1)
+    
+    
+    #todo=comentarios+respuestas_comentarios
+    #todo=np.asarray(todo)
+    #df = pd.DataFrame(todo)
+    #df.to_csv('datos2.csv')
+
+  
     
 if __name__=="__main__":
     #4561570650533328 noticia marinos
@@ -55,12 +79,15 @@ if __name__=="__main__":
     #4556360867720973  noticioa comercio mas 2.6k 
     #4712305442149214 noticia champions 9.6k
     
-    id_publi='4712305442149214'
+    #4092933887435474   comprobar respuestas comentarios
+    
+    #1809622235877791  BOT LUI....comentarios
+    #4193694080652596 obtener reacciones
+    
+    
+    id_publi='4561570650533328'
     email='jav2022123@gmail.com'
     pas='marytigrearias99'
     loginComentario(email, pas, id_publi);
-    #obtenerCom()
+
     
-    
-    
-#for i in comentarios: print(i)
