@@ -24,12 +24,15 @@ class Conexion():
         #.......Tipo .....
         # 0 .....solo un adato
         # 1 ...... una lista datos
+        # 2 ..... consulta base 
         try:
             cursor = self.conexion.cursor()
             if tipo ==1:
                 cursor.executemany(query,datos)
-            else:
+            if tipo ==0:
                 cursor.execute(query,datos)
+            if tipo ==2:
+                cursor.execute(query)
             self.conexion.commit()
         except:
             # Si se genero algun error revertimos la operacion

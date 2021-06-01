@@ -10,6 +10,11 @@ import numpy as np
 
 import loginComentarios
 import conexionBase
+import LimpiezaPLN
+import LDA
+#from imp import reload
+import warnings
+warnings.filterwarnings('ignore')
 
 def guardarBase(sql,datos, tipo):
       #### guardar publicacion
@@ -17,8 +22,11 @@ def guardarBase(sql,datos, tipo):
     if tipo ==0:
         cursor=con.guardar(sql, datos, tipo)
         return cursor.lastrowid
-    else:
+    if tipo ==1:
         cursor=con.guardar(sql, datos, tipo)
+    if tipo ==2:
+        return con.guardar(sql, 0, tipo)
+        
         
 def loginComentario(email,pas, id_face):
     
@@ -62,14 +70,29 @@ def loginComentario(email,pas, id_face):
             val.append(dato)
     cursor=guardarBase("INSERT INTO respuesta_comentarios (nombre_usuario,detalle_respuesta, perfil_usuario_respuesta, id_comentario) VALUES (%s,%s,%s,%s)", comentario_respuestas,1)
     cursor=guardarBase("INSERT INTO comentarios (nombre_usuario,detalle_comentario, perfil_usuario_comentario, id_publicacion) VALUES (%s,%s,%s,%s)", val,1)
+    return id_publicacion
+def lda(id_publicacion, num_topics):
+   
+    com=guardarBase(('SELECT detalle_comentario from comentarios where id_publicacion='+str(id_publicacion)), 0, 2)
+    res=guardarBase(('SELECT r.detalle_respuesta from comentarios c, respuesta_comentarios r where c.id_publicacion='+str(id_publicacion)+' and c.id_comentario= r.id_comentario'), 0, 2)
+    comentarios=[]
+    texto=''
+    for x in com.fetchall():
+        comentarios.append(x[0])
+    for i in res.fetchall():
+        comentarios.append(i[0])
+    #comentarios.append(texto)    
     
+    #print(comentarios)
+    #### LIMPIEZA COMENTARIOS
+    lim=LimpiezaPLN.Procesamiento(comentarios)
+    token, stem,leman=lim.limpieza()
+    print(leman)
     
-    #todo=comentarios+respuestas_comentarios
-    #todo=np.asarray(todo)
-    #df = pd.DataFrame(todo)
-    #df.to_csv('datos2.csv')
-
-  
+    #### LDA
+    lda=LDA.ModeloLDA(leman, comentarios)
+    lda.modelo(num_topics,id_publicacion)
+    
     
 if __name__=="__main__":
     #4561570650533328 noticia marinos
@@ -84,10 +107,11 @@ if __name__=="__main__":
     #1809622235877791  BOT LUI....comentarios
     #4193694080652596 obtener reacciones
     
-    
-    id_publi='4561570650533328'
+    id_publi='4640200359337023'
     email='jav2022123@gmail.com'
     pas='marytigrearias99'
-    loginComentario(email, pas, id_publi);
-
+    #publicacion=loginComentario(email, pas, id_publi);
+    lda(1, 7)
+    
+    
     
