@@ -12,13 +12,15 @@ import loginComentarios
 import conexionBase
 import LimpiezaPLN
 import LDA
+import predecirSentimiento
+from predecirSentimiento import Sentimiento
 #from imp import reload
 import warnings
 warnings.filterwarnings('ignore')
 
 def guardarBase(sql,datos, tipo):
       #### guardar publicacion
-    con=conexionBase.Conexion('localhost','root','','tesis')
+    
     if tipo ==0:
         cursor=con.guardar(sql, datos, tipo)
         return cursor.lastrowid
@@ -26,29 +28,27 @@ def guardarBase(sql,datos, tipo):
         cursor=con.guardar(sql, datos, tipo)
     if tipo ==2:
         return con.guardar(sql, 0, tipo)
+    if tipo==3:
+        return con.guardar(sql, datos, tipo)
         
         
-def loginComentario(email,pas, id_face):
+def loginComentario(email,pas, url, id_usuario):
     
-    log=loginComentarios.loginComentarios(id_face, email, pas)
-    nombre_publicacion, reacciones=log.obtener_comentarios()
+    log=loginComentarios.loginComentarios(url, email, pas)
+    nombre_publicacion, reacciones, path=log.obtener_comentarios()
     com_dic=log.obtener_comentarios_paginas()
     
-    total, res=log.guardar_respuesta_comentarios()
+    total, res,id_face=log.guardar_respuesta_comentarios()
     
     val=[]
     comentario_respuestas=[]
-    con=conexionBase.Conexion('localhost','root','','tesis')
-    id_empresa=1000
+  
     url_publicacion='https://www.facebook.com/photo?fbid='+id_face
     datos=( id_face, nombre_publicacion, url_publicacion,reacciones[0],reacciones[1],reacciones[2],reacciones[3],
-           reacciones[4],reacciones[5],reacciones[6],id_empresa)
+           reacciones[4],reacciones[5],reacciones[6],id_usuario)
     
-    id_publicacion=guardarBase("INSERT INTO publicacion (id_facebook,nombre_publicacion,url_publicacion,alegra,asombra,encanta,entristese,importa,gusta,enoja,id_empresa) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", datos, 0)
+    id_publicacion=guardarBase("INSERT INTO publicacion (id_facebook,nombre_publicacion,url_publicacion,alegra,asombra,encanta,entristese,importa,gusta,enoja,id_usuario) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)", datos, 0)
     
-    
-    print("Total ", total)
-
     for key in com_dic:
         if len(com_dic[key])>2:
             
@@ -71,47 +71,160 @@ def loginComentario(email,pas, id_face):
     cursor=guardarBase("INSERT INTO respuesta_comentarios (nombre_usuario,detalle_respuesta, perfil_usuario_respuesta, id_comentario) VALUES (%s,%s,%s,%s)", comentario_respuestas,1)
     cursor=guardarBase("INSERT INTO comentarios (nombre_usuario,detalle_comentario, perfil_usuario_comentario, id_publicacion) VALUES (%s,%s,%s,%s)", val,1)
     return id_publicacion
+
 def lda(id_publicacion, num_topics):
    
-    com=guardarBase(('SELECT detalle_comentario from comentarios where id_publicacion='+str(id_publicacion)), 0, 2)
-    res=guardarBase(('SELECT r.detalle_respuesta from comentarios c, respuesta_comentarios r where c.id_publicacion='+str(id_publicacion)+' and c.id_comentario= r.id_comentario'), 0, 2)
+    com=guardarBase(('SELECT id_comentario, detalle_comentario from comentarios where id_publicacion='+str(id_publicacion)), 0, 2)
+    res=guardarBase(('SELECT r.id_respuesta_comentarios, r.detalle_respuesta from comentarios c, respuesta_comentarios r where c.id_publicacion='+str(id_publicacion)+' and c.id_comentario= r.id_comentario'), 0, 2)
     comentarios=[]
-    texto=''
-    for x in com.fetchall():
-        comentarios.append(x[0])
-    for i in res.fetchall():
-        comentarios.append(i[0])
-    #comentarios.append(texto)    
     
-    #print(comentarios)
-    #### LIMPIEZA COMENTARIOS
+    id_comentarios, id_respuestas=[],[]
+    cont_comentarios, cont_respuestas=0,0
+    for x in com.fetchall():
+        comentarios.append(x[1])
+        id_comentarios.append(x[0])
+        cont_comentarios+=1
+    for i in res.fetchall():
+        comentarios.append(i[1])
+        id_respuestas.append(i[0])
+        cont_respuestas +=1
+    
+    #### LIMPIEZA COMENTARIOS -PLN
     lim=LimpiezaPLN.Procesamiento(comentarios)
     token, stem,leman=lim.limpieza()
-    print(leman)
     
     #### LDA
+    print(leman)
+    print('\n\n\n ******************* ************')
+    print(comentarios)
     lda=LDA.ModeloLDA(leman, comentarios)
-    lda.modelo(num_topics,id_publicacion)
+    path_topics, pathpyldavis, topicos_comentarios = lda.modelo(num_topics,id_publicacion)
+    data=(path_topics, pathpyldavis, id_publicacion)
+    guardarBase("UPDATE publicacion SET path_ldatopics =%s,path_pyldavis =%s WHERE id_publicacion= %s", data, 3)
     
+    print(' ---- TAM = ', len(comentarios)," || ", len(topicos_comentarios))
+    
+    for i in range(len(comentarios)):
+        print(comentarios[i] ," || ", topicos_comentarios[i])
+    
+    
+    return leman, comentarios,[cont_comentarios,cont_respuestas],id_comentarios, id_respuestas, topicos_comentarios
+
+def actualizarTopicosBase(topicos_comentarios, id_comentarios, id_respuestas, contadores_comentarios, id_publicacion):
+    aux=0
+    for i in range(contadores_comentarios[0]):
+        data=(topicos_comentarios[i], id_comentarios[aux])
+        guardarBase("UPDATE comentarios SET num_topico = %s WHERE id_comentario = %s", data, 3)
+        aux+=1
+    
+    aux=0
+    for j in range(contadores_comentarios[0], len(topicos_comentarios)):
+        data=(topicos_comentarios[j],id_respuestas[aux])
+        #print(" ",sentimientos[j]," | ",id_respuestas[aux] )
+        guardarBase("UPDATE respuesta_comentarios SET num_topico = %s WHERE id_respuesta_comentarios = %s", data, 3)
+        aux+=1
+    data=(len(topicos_comentarios), id_publicacion)
+    guardarBase("UPDATE publicacion SET num_comentarios = %s WHERE id_publicacion = %s", data, 3)
+        
+    
+    
+def predecirSentimiento(lemantizado, comentarios):
+    
+    leman=[" ".join(i) for i in lemantizado]
+    #print(leman)
+    sentimientos=[]
+
+    lim=LimpiezaPLN.Procesamiento(comentarios)
+
+    
+    for text in leman:
+        if text is '':
+            sen='Vacio'
+        else:
+            text=lim.remover_caracteres(text)
+            sen=predecir.predecirSentimiento(text)
+            print('Text:  ',text,"  | ",sen,"\n")
+        
+        sentimientos.append(sen)
+    
+    return sentimientos
+    
+def actualizarSentimientoBase(sentimientos, id_comentarios, id_respuestas, contadores_comentarios):
+    print("\n ACTUALIZAR BASEEEE \n")
+    sql = "UPDATE comentarios SET sentimiento = %s WHERE id_comentario = %s"
+    #data=[(3,2),(3,5)] actualizar varios datos
+    
+    aux=0
+    for i in range(contadores_comentarios[0]):
+        #print(" | ", sentimientos[i])
+        data=(sentimientos[i],id_comentarios[aux])
+        guardarBase("UPDATE comentarios SET sentimiento = %s WHERE id_comentario = %s", data, 3)
+        aux+=1
+    
+    aux=0
+    for j in range(contadores_comentarios[0], len(sentimientos)):
+        data=(sentimientos[j],id_respuestas[aux])
+        #print(" ",sentimientos[j]," | ",id_respuestas[aux] )
+        guardarBase("UPDATE respuesta_comentarios SET sentimiento = %s WHERE id_respuesta_comentarios = %s", data, 3)
+        aux+=1
+    #update=guardarBase(sql, data, 3)
+    
+    
+def loginComentario2(email,pas, url, id_usuario):
+    
+    log=loginComentarios.loginComentarios(url, email, pas)
+    nombre_publicacion, reacciones, path=log.obtener_comentarios()
+    com_dic=log.obtener_comentarios_paginas()
+    
+    total, res,id_face=log.guardar_respuesta_comentarios()
     
 if __name__=="__main__":
-    #4561570650533328 noticia marinos
-    #4562003263823400
-    #166475175361071
+
     
-    #4556360867720973  noticioa comercio mas 2.6k 
-    #4712305442149214 noticia champions 9.6k
-    
-    #4092933887435474   comprobar respuestas comentarios
-    
-    #1809622235877791  BOT LUI....comentarios
-    #4193694080652596 obtener reacciones
-    
-    id_publi='4640200359337023'
+    url='https://www.facebook.com/photo?fbid=2046800432126167&set=gm.846183586283530'
     email='jav2022123@gmail.com'
     pas='marytigrearias99'
-    #publicacion=loginComentario(email, pas, id_publi);
-    lda(1, 7)
+    id_usuario=10
+    
+    con=conexionBase.Conexion('localhost','root','','tesis') # conexion con la base 
+    predecir = Sentimiento('modeloSentimiento/MODELO_AMAZON.h5','modeloSentimiento/tokenizerRNN.pickle') # cargar archivos necesarios del modelo RNN
+    
+    
+   
+    #publicacion=loginComentario(email, pas, url,id_usuario) # obtener comentarios de la apgina 
+    
+    id_publicacion=94 #dentro de la base
+    num_topics=3
+    lemantizado, comentarios, contadores_comentarios, id_comentarios, id_respuestas, topicos_comentarios=lda(id_publicacion, num_topics)    # obtener topicos LDA 
+    
+    
+    #actualizarTopicosBase(topicos_comentarios, id_comentarios, id_respuestas, contadores_comentarios,id_publicacion)
+    
+    sentimientos= predecirSentimiento(lemantizado, comentarios)     # obtener sentimientos de los comentarios lemantizado
+    
+    print(sentimientos)
+    positivo=0
+    negativo = 0
+    for i in sentimientos:
+        if i == 'Positivo':
+            positivo +=1
+        else:
+            negativo +=1
+    porcentaje = (positivo * 100)/(positivo+negativo)
+    if porcentaje <=15:
+        rating = 1
+    elif porcentaje >15 and porcentaje <=40:
+        rating = 2
+    elif porcentaje >40 and porcentaje <=60:
+        rating = 3
+    elif porcentaje >60 and porcentaje <=80:
+        rating = 4
+    elif porcentaje >80:
+        rating=5
+    
+    print("contadores ", positivo, "| ", negativo)
+    print("rating ", rating)
+    #actualizarSentimientoBase(sentimientos, id_comentarios, id_respuestas, contadores_comentarios)
     
     
     

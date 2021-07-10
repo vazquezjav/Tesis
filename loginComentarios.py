@@ -13,28 +13,31 @@ import re
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.keys import Keys
 
 class loginComentarios:
     
-    def __init__(self,id_facebook, email, pas):
-         self.id_facebook=id_facebook
+    def __init__(self,url, email, pas):
+         #self.id_facebook=id_facebook
          self.htmls=[]
          self.total=0
          self.url_respuestas=[]
          self.browser=self.login(email, pas)
+         self.id_facebook = self.obtenerID(url)
          self.comentario_anterior=0
          self.respuesta=self.vector_respuestas_comentarios(100)
          
          self.comentarios_dic={}
          self.respuestas_dic={}
          
-         
+       
+
     def login(self, email, pas):
         
         chrome_options =  Options()
         chrome_options.add_argument("--headless")
-        browser = webdriver.Chrome(executable_path=ChromeDriverManager().install(), options=chrome_options)
+        browser = webdriver.Firefox(executable_path="geckodriver-v0.29.1-win64/geckodriver.exe", options=chrome_options)
         browser.get('https://mbasic.facebook.com')
         
         username = browser.find_elements_by_css_selector("input[name=email]")
@@ -47,7 +50,18 @@ class loginComentarios:
         loginButton[0].click()
         
         return browser
-         
+        
+    def obtenerID(self, url):
+        self.browser.get('https://commentpicker.com/facebook-post-id-finder.php')
+
+        inputURL = self.browser.find_elements_by_css_selector("input[id=facebook-post-url]")
+        inputURL[0].send_keys(url)
+
+        df = self.browser.find_element_by_xpath("//*[@id='facebook-post-url']")
+        df.send_keys(Keys.TAB*2, Keys.ENTER)
+
+        text= self.browser.find_element_by_id("js-result")
+        return text.text
          
     def separar_id_pagina_comentarios(self, url):
         #global respuesta_comentarios
@@ -175,6 +189,7 @@ class loginComentarios:
         return users, url
 
     def obtener_reacciones(self,url):
+        
         self.browser.get(url)
         res =self.browser.page_source
         soup2 =bs4(res , 'html.parser')
@@ -197,10 +212,11 @@ class loginComentarios:
             if i['data-store'] =='{"reactionType":8}':
                 enoja=i.text
         reacciones=[alegra,asombra,encanta,entristese,importa,like,enoja]
+       
         return reacciones
     def obtener_comentarios(self):
         #id='3979298638823457'
-        url='https://mbasic.facebook.com/photo?fbid='+self.id_facebook
+        url='https://mbasic.facebook.com/'+self.id_facebook
         cont =0
         cont2 = 0
         cont_reacciones=0
@@ -209,12 +225,14 @@ class loginComentarios:
         lista_urls=[]
         #respuesta=self.vector_respuestas_comentarios(100)
         nombre_publicacion=''
+        path_img=''
         while True:
             if cont >1:
                 if  url in lista_urls:
                     print("entra salir")
                     break
             #res =requests.get(url)
+            print(url)
             self.browser.get(url)
             res=self.browser.page_source
             soup =bs4(res , 'html.parser')
@@ -247,6 +265,13 @@ class loginComentarios:
                     if text ==' View previous comments...':
                         url_anterior='https://mbasic.facebook.com'+i['href']
                         self.obtener_comentarios_anteriores(url_anterior)
+            if cont ==0:        
+                tags_img=soup.findAll("img")
+                cont_img=0
+                for tag in tags_img:
+                    if cont_img==1:
+                        path_img=tag['src']
+                    cont_img+=1
                         
                 
                 sep=i.text.split("·")  
@@ -264,10 +289,16 @@ class loginComentarios:
                         self.url_respuestas.append('https://mbasic.facebook.com'+i['href'])
             cont +=1
             cont2 =0 #reiniciamos contador para obtener el url de la siguiente pagina 'ver mas comentarios'
-            url='https://mbasic.facebook.com'+more_comments
+            print("mas comentarios ")
+            
+            if more_comments.startswith('https://mbasic.facebook.com'):
+                url=more_comments
+            else:
+                url='https://mbasic.facebook.com'+more_comments
     
-            print("Comentarios pagina = ",cont+1)
-        return titulo, reacciones
+            print("Comentarios pagina = ",cont," \n")
+        
+        return titulo, reacciones,path_img
             
     def obtener_comentarios_paginas(self):
         print("Obteniedo comentarios paginas ")
@@ -301,7 +332,7 @@ class loginComentarios:
         
         self.browser.close()
         self.concatenar_diccionarios()
-        return self.total, self.respuestas_dic
+        return self.total, self.respuestas_dic, self.id_facebook
 
     
     def concatenar_diccionarios(self):
