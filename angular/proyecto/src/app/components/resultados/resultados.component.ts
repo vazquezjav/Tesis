@@ -240,7 +240,7 @@ export class ResultadosComponent implements OnInit {
         negativo += 1;
       }
     }
-    console.log("porcentaje ", positivo, " | ", negativo)
+    
     
     const canvas = <HTMLCanvasElement> document.getElementById('canvaPorcentajeComentarios');
     const ctx = canvas.getContext('2d');
@@ -353,7 +353,7 @@ export class ResultadosComponent implements OnInit {
       rating: this.publicacion.rating
     }
     this.authService.actualizarRating(actualizarRating).subscribe(respuesta => {
-      console.log(respuesta)
+      //console.log(respuesta)
     })
   }
 

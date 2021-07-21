@@ -15,9 +15,9 @@ export class RoleGuard implements CanActivate {
   //verificar que el rol esperado
   canActivate(route: ActivatedRouteSnapshot): boolean{
     const expectedRole = route.data.expectRole;
-    console.log(expectedRole)
+    
     if(!this.authService.isAuth()){
-      console.log("token no valido o expiro")
+      
       this.router.navigate(['login'])
       return false;
     }else{
@@ -25,10 +25,10 @@ export class RoleGuard implements CanActivate {
       //decodificar el token 
       
       const data = JSON.parse(JSON.stringify(decode(token!)));
-      console.log(data['nombre_usuario'], data['rol'])
+      
       
       if(!this.authService.isAuth ||  data['rol'] !== expectedRole){
-        console.log('usuario no autotrizado')
+        
         this.router.navigate(['login'])
         return false;
       }

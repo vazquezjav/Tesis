@@ -57,7 +57,7 @@ class ModeloLDA():
                                                 #alpha=[0.01]*topics,
                                                 #eta=[0.01]*len(self.diccionario_LDA.keys())
                                                 )
-        pprint(self.lda_model.print_topics())
+        #pprint(self.lda_model.print_topics())
         path_topics = self.graficarTopicos(topics, id_publicacion)
         path_pyldavis = self.guardar(id_publicacion)
         self.comentariosTopicos = self.formato_topico_oracion()

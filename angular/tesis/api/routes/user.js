@@ -12,13 +12,13 @@ router.get('/', (req, res) => {
         if (!err) {
             res.json(rows)
         } else {
-            console.log("errorr query", err)
+            res.json(err)
         }
     })
 });    //listar todos los usuarios y comprobar que este funcionando
 
 router.post('/singin', (req, res) => {
-    console.log(req.body)
+    
     const email = req.body.email
     const password = req.body.password
 
@@ -27,7 +27,7 @@ router.post('/singin', (req, res) => {
             if (!err) {
                 if (rows.length == 0) {
                     res.json('Usuario o clave incorrectos');
-                    console.log('no');
+                    
                 } else {
                     if(rows[0]['estado'] =='Habilitado'){
                         let data = JSON.stringify(rows[0]);
@@ -38,7 +38,7 @@ router.post('/singin', (req, res) => {
                     }
                 }
             } else {
-                console.log(' error consulta ', err)
+                res.json(err)
             }
         }
     )
@@ -52,13 +52,13 @@ router.get('/datos-usuario/:id', (req, res) => {
         if (!err) {
             res.json(rows)
         } else {
-            console.log("errorr query", err)
+            res.json(err)
         }
     })
 })
 
 router.post('/singup', (req, res) => {
-    console.log("registro ", req.body)
+    
     const name = req.body.nombre_usuario
     const direccion = req.body.direccion_usuario
     //const facebook = req.body.id_facebook
@@ -78,12 +78,12 @@ router.post('/singup', (req, res) => {
 // obtener los resultados query consulta datos publicacion 
 
 router.get('/resultados/publicacion/:id', (req, res) => {
-    console.log('Llega id publicacion', req.params.id)
+    
     mysqlConnection.query('select * from publicacion where id_publicacion=?', [req.params.id], (err, rows, fields) => {
         if (!err) {
             res.json(rows)
         } else {
-            console.log("errorr query", err)
+            res.json(err)
         }
     })
 })
@@ -91,7 +91,7 @@ router.get('/resultados/publicacion/:id', (req, res) => {
 
 // obetener todas las publicaciones por un usuario 
 router.get('/publicaciones/usuario/:id', (req, res) => {
-    console.log('Llega id usuario', req.params.id)
+    
     mysqlConnection.query('select * from publicacion where id_usuario=? order by fecha desc', [req.params.id], (err, rows, fields) => {
         if (!err) {
 
@@ -101,7 +101,7 @@ router.get('/publicaciones/usuario/:id', (req, res) => {
                 res.json(rows)
             }
         } else {
-            console.log("errorr query", err)
+            res.json(err)
         }
     })
 });
@@ -109,7 +109,7 @@ router.get('/publicaciones/usuario/:id', (req, res) => {
 // obtener comentarios de una publicacion
 
 router.get('/publicacion/comentarios/:id', (req, res) => {
-    console.log('Llega id publicacion', req.params.id)
+    
     mysqlConnection.query('SELECT * from comentarios where id_publicacion=?', [req.params.id], (err, rows, fields) => {
         if (!err) {
 
@@ -119,14 +119,14 @@ router.get('/publicacion/comentarios/:id', (req, res) => {
                 res.json(rows)
             }
         } else {
-            console.log("errorr query", err)
+            res.json(err)
         }
     })
 })
 
 // obtener num comentarios  y respuestas 
 router.get('/publicacion/totalComentarios/:id', (req, res) => {
-    console.log('Llega id publicacion total comentarios', req.params.id)
+    
     var cont =0;
     mysqlConnection.query('SELECT * from comentarios where id_publicacion=?', [req.params.id], (err, rows, fields) => {
         if (!err) {
@@ -154,12 +154,12 @@ router.get('/publicacion/totalComentarios/:id', (req, res) => {
                             res.json(c)
                         }
                     } else {
-                        console.log("errorr query", err)
+                        res.json(err)
                     }
                 })
             }
         } else {
-            console.log("errorr query", err)
+            res.json(err)
         }
     })
     
@@ -168,7 +168,7 @@ router.get('/publicacion/totalComentarios/:id', (req, res) => {
 
 // obtener respuestas de los comentarios 
 router.get('/publicacion/respuestas/:id', (req, res) => {
-    console.log('Llega id publicacion respuestas', req.params.id)
+    
     mysqlConnection.query('SELECT r.id_respuesta_comentarios, r.detalle_respuesta, r.sentimiento, r.id_comentario, r.num_topico from comentarios c, respuesta_comentarios r where c.id_publicacion=? and c.id_comentario= r.id_comentario', [req.params.id], (err, rows, fields) => {
         if (!err) {
 
@@ -178,7 +178,7 @@ router.get('/publicacion/respuestas/:id', (req, res) => {
                 res.json(rows)
             }
         } else {
-            console.log("errorr query", err)
+            res.json(err)
         }
     })
 })
@@ -186,7 +186,7 @@ router.get('/publicacion/respuestas/:id', (req, res) => {
 router.get('/datos/usuario/:id', (req, res) => {
 
     const id_usuario = req.params.id
-    console.log("llega peticion consulta datos ", id_usuario)
+    
     mysqlConnection.query('SELECT * FROM usuario WHERE id_usuario=?', [id_usuario], (err, rows, field) => {
         if (!err) {
             if (rows.length == 0) {
@@ -206,7 +206,7 @@ router.post('/publicacion/actualizar/rating', (req, res) => {
 
     const id = req.body.id
     const rating = req.body.rating
-    console.log("Actualizar rating:  ", id, " | ", rating)
+    
     //const facebook = req.body.id_facebook
     mysqlConnection.query(`UPDATE publicacion SET rating=? WHERE id_publicacion=?`,
         [rating, id], (err, rows, fields) => {
@@ -221,7 +221,7 @@ router.post('/publicacion/actualizar/rating', (req, res) => {
 
 //actualizar datos del usuario 
 router.post('/datos/usuario/actualizar', (req, res) => {
-    console.log("llega actyualiza usuario", req.body)
+    
     mysqlConnection.query('UPDATE usuario SET nombre_usuario=?, direccion_usuario=?, email=?, password=? WHERE id_usuario=?',
         [req.body.nombre_usuario, req.body.direccion_usuario, req.body.email, req.body.password, req.body.id_usuario], (err, rows, field) => {
             if (!err) {
@@ -241,7 +241,7 @@ router.get('/admin/lista-usuarios/',(req,res)=>{
         if (!err) {
             res.json(rows)
         } else {
-            console.log("Error en la consulta", err)
+            res.json(err)
         }
     })
 });
@@ -261,7 +261,7 @@ router.post('/admin/actualizar-usuario/',(req,res)=>{
 
 // agregar nuevo usuario con todos los datos 
 router.post('/admin/crear-usuario/',(req,res)=>{
-    console.log("llega admin crear ", req.body)
+    
     mysqlConnection.query('INSERT INTO usuario(nombre_usuario, direccion_usuario, email, password, estado, rol) VALUES (?,?,?,?,?,?)',
     [req.body.nombre_usuario, req.body.direccion_usuario, req.body.email, req.body.password,req.body.estado, req.body.rol,], (err, rows, field) => {
         if (!err) {

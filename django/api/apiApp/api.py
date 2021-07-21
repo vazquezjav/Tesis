@@ -7,6 +7,10 @@ from desarrollo.loginComentarios import loginComentarios
 from .apps import CargarCosas
 from desarrollo.LimpiezaPLN import Procesamiento
 from desarrollo.LDA import ModeloLDA
+
+import warnings
+warnings.filterwarnings("ignore")
+
 class UserApi(APIView):
 
     def post(self, request):
@@ -166,7 +170,7 @@ class Metodos(object):
              else:
                  text = lim.remover_caracteres(text)
                  sen = CargarCosas.modelo.predecirSentimiento(text)
-                 print('Text:  ', text, "  | ", sen, "\n")
+
 
              sentimientos.append(sen)
 

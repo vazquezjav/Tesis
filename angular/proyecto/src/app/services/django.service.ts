@@ -10,6 +10,7 @@ export class DjangoService {
   constructor(private http: HttpClient) { }
 
   analizar_post(data:any){
+    console.log("llega")
     return this.http.post(`${this.URL}/facebook/`,data)
   }
 }

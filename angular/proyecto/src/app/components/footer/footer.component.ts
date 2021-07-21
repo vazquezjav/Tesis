@@ -17,13 +17,13 @@ export class FooterComponent implements OnInit {
   }
 
   enviar(){
-    console.log('enviar ', this.email," | ", this.message)
+    
     this.message = '';
     this.email = '';
     alert('Pronto el equipo de desarrollo se comunicara con usted')
   }
   home(){
-    console.log('llega home ')
+    
     this.router.navigate(['home'])
   }
   login(){

@@ -58,14 +58,14 @@ export class DashboardComponent implements OnInit {
     this.obtenerPublicaciones();
     this.results = this.authService.datosUsuario(Number(this.data['id_usuario']));
 
-    console.log("metod ", this.authService.datosUsuario(Number(this.data['id_usuario'])))
+   
     
   }
   obtenerUsuario(id:number){
    this.authService.datosUsuario(id).subscribe((res:Usuario)=>{
     
      this.usuario = res[0]
-     console.log("ususario ", this.usuario)
+     
      return res
    })
 
@@ -99,7 +99,7 @@ export class DashboardComponent implements OnInit {
     this.djangoService.analizar_post(datos_post).subscribe((res: any) => {
       
       const respuesta = JSON.parse(JSON.stringify(res));
-      console.log('respuesta servidor', respuesta)
+      
       if(respuesta['Mensaje']=="Error durante el procesamiento"){
         this.messageService.add({ severity: 'error', summary: 'Error', detail: 'A ocurrido un error, lo sentimos mucho ' });
       }else{

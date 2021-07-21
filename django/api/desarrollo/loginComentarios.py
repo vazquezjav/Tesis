@@ -122,7 +122,8 @@ class loginComentarios:
                     if not i['href'] in url_respuestas:
                         url_respuestas.append('https://mbasic.facebook.com'+i['href'])
         except:
-            print("No hay mas respuestas")
+            #print("No hay mas respuestas")
+             c = ''
         return url_respuestas
     
     
@@ -130,7 +131,8 @@ class loginComentarios:
         self.browser.get(url)
         res=self.browser.page_source
         soup =bs4(res , 'html.parser')
-        print("Comentarios anteriores = ", self.comentario_anterior)
+        #print("Comentarios anteriores = ", self.comentario_anterior)
+
         try:
             comments = soup.findAll('div', {'class':self.encontrar_class_comentarios(soup)})
             users, urls= self.encontrar_nombre_usuarios(soup, 1)
@@ -142,7 +144,8 @@ class loginComentarios:
                     self.comentarios_dic[comments[i].text]= datos_ususario_dic
                     #self.comentarios.append(datos_usuario)
         except:
-            print("No mas comentarios")
+            #print("No mas comentarios")
+            c=''
         
         self.comentario_anterior +=1
         try:
@@ -168,7 +171,8 @@ class loginComentarios:
                     self.obtener_comentarios_anteriores(url_anterior)
                    
         except:
-            print('')
+            #print('')
+             c = ''
             
     def encontrar_nombre_usuarios(self, html, pagina):
         selector = 'h3 a '
@@ -229,10 +233,10 @@ class loginComentarios:
         while True:
             if cont >1:
                 if  url in lista_urls:
-                    print("entra salir")
+                    #print("entra salir")
                     break
             #res =requests.get(url)
-            print(url)
+            #print(url)
             self.browser.get(url)
             res=self.browser.page_source
             soup =bs4(res , 'html.parser')
@@ -266,6 +270,15 @@ class loginComentarios:
                         url_anterior='https://mbasic.facebook.com'+i['href']
                         self.obtener_comentarios_anteriores(url_anterior)
 
+                    sep = i.text.split("·")
+                    # cuando el formota del comentario es asi 'Web On Duque replied · 1 reply'
+                    if len(sep) > 1:
+                        tt = sep[1]
+                        tt = tt[1:]  # eliminar primer caracter
+                        if tt in self.respuesta:
+                            if not i['href'] in self.url_respuestas:
+                                self.url_respuestas.append('https://mbasic.facebook.com' + i['href'])
+
                 if cont == 0:
                     tags_img = soup.findAll("img")
                     cont_img = 0
@@ -273,15 +286,7 @@ class loginComentarios:
                         if cont_img == 1:
                             path_img = tag['src']
                         cont_img += 1
-                sep=i.text.split("·")  
-                
-                #cuando el formota del comentario es asi 'Web On Duque replied · 1 reply'
-                if len(sep) >1:
-                    tt=sep[1]
-                    tt=tt[1:] #eliminar primer caracter
-                    if tt in self.respuesta:
-                        if not i['href'] in self.url_respuestas:
-                            self.url_respuestas.append('https://mbasic.facebook.com'+i['href'])
+
                     
                 if i.text in self.respuesta:
                     if not i['href'] in self.url_respuestas:
@@ -293,12 +298,12 @@ class loginComentarios:
             else:
                 url = 'https://mbasic.facebook.com' + more_comments
     
-            print("Comentarios pagina = ",cont+1," \n")
+            #print("Comentarios pagina = ",cont+1," \n")
         
         return titulo, reacciones, path_img
             
     def obtener_comentarios_paginas(self):
-        print("Obteniedo comentarios paginas ")
+        #print("Obteniedo comentarios paginas ")
         cont_com=0
         for j in self.htmls:
             try:
@@ -317,7 +322,7 @@ class loginComentarios:
         return self.comentarios_dic
     
     def guardar_respuesta_comentarios(self):
-        print("Obteniendo comentarios respuestas")
+        #print("Obteniendo comentarios respuestas")
         if  self.url_respuestas != []:
             for i in self.url_respuestas:
                 self.obtener_comentarios_respuesta_comentarios(i)

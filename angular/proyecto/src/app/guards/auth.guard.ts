@@ -14,7 +14,7 @@ export class AuthGuard implements CanActivate {
   ){}
   canActivate(): boolean{
     if(!this.authService.isAuth()){
-      console.log("token no valido o expiro")
+      //console.log("token no valido o expiro")
       this.router.navigate(['login'])
       return false;
     }

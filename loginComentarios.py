@@ -30,8 +30,9 @@ class loginComentarios:
          
          self.comentarios_dic={}
          self.respuestas_dic={}
-         
-       
+         self.respuestas_temp=[]
+         self.imagen_cont_res=0
+         self.imagen_cont_coment=0
 
     def login(self, email, pas):
         
@@ -85,6 +86,8 @@ class loginComentarios:
             #[str(j)+' respuestas' for j in range(2,maximo+1)]
         return respuesta
 
+
+
     def obtener_comentarios_respuesta_comentarios(self, url):
         #mediante web scraping optener las respuestas de los comentarios 
         #recibe la url previamente obtenida que nos direcciona a la pagina de respuestas a un comentario
@@ -92,7 +95,7 @@ class loginComentarios:
         self.browser.get(url)
         res=self.browser.page_source
         soup =bs4(res , 'html.parser')
-        
+        #print("URL RESPUESTAS ---- ", url)
         filtrado=soup.findAll('div', {'class':self.encontrar_class_comentarios(soup)})
         users, urls = self.encontrar_nombre_usuarios(soup, 0)
         respuestas=[]
@@ -101,14 +104,25 @@ class loginComentarios:
             if not filtrado[i].text =='':
                 datos_usuario =[users[i],filtrado[i].text,urls[i]]
                 respuestas.append(datos_usuario)
-                
-        self.respuestas_dic[filtrado[0].text]=respuestas
+                self.respuestas_temp.append(datos_usuario)
+        #print("---- respuesta ", respuestas)
         
         tags_a=soup.findAll("a")
         for i in tags_a:
             if i.text =='View previous replies':
                 url_respuestas_anteriores='https://mbasic.facebook.com'+i['href']
                 self.obtener_comentarios_respuesta_comentarios(url_respuestas_anteriores)
+        #self.respuestas_dic[filtrado[0].text]=self.respuestas_temp
+        #print("--- respuesta ", self.respuestas_temp)
+        
+        if filtrado[0].text=="":
+            self.imagen_cont_res+=1
+            print("-*-*-*-*-* nombree imagen ",('imagen_'+str(self.imagen_cont_res)), self.respuestas_temp)
+            self.respuestas_dic['imagen_'+str(self.imagen_cont_res)]=self.respuestas_temp
+        else:
+            self.respuestas_dic[filtrado[0].text]=self.respuestas_temp
+        
+        self.respuestas_temp=[]
             
     def urls_respuestas_comentarios(self,html):
         #devuelve la lista de url de las respuestas de los comentarios 
@@ -136,11 +150,16 @@ class loginComentarios:
             users, urls= self.encontrar_nombre_usuarios(soup, 1)
             for i in range(0, len(comments)):
                 self.total +=1
+                datos_ususario_dic=[users[i], urls[i]]
                 if not comments[i].text=='':
                     #datos_usuario=[users[i],comments[i].text, urls[i]]
-                    datos_ususario_dic=[users[i], urls[i]]
+                    
                     self.comentarios_dic[comments[i].text]= datos_ususario_dic
                     #self.comentarios.append(datos_usuario)
+                else:
+                    self.imagen_cont_coment+=1
+                    self.comentarios_dic['imagen_'+str(self.imagen_cont_coment)]=datos_ususario_dic
+                    
         except:
             print("No mas comentarios")
         
@@ -157,10 +176,12 @@ class loginComentarios:
                     tt=tt[1:] #eliminar primer caracter
                     if tt in self.respuesta:
                         if not i['href'] in self.url_respuestas:
+                            print("URLLLLL RESS   FFFFF ", 'https://mbasic.facebook.com',i['href'])
                             self.url_respuestas.append('https://mbasic.facebook.com'+i['href'])
                     
                 if i.text in self.respuesta:
                     if not i['href'] in self.url_respuestas:
+                        
                         self.url_respuestas.append('https://mbasic.facebook.com'+i['href'])
                         
                 if text ==' View previous comments...':
@@ -249,6 +270,7 @@ class loginComentarios:
             except:
                     break
             for i in tags_a:
+                #print("ETIQUETA A AAA ",i.text)
                 text=unidecode(i.text)
                 if text ==' View more comments...':
                     if cont2 == 0:
@@ -265,6 +287,17 @@ class loginComentarios:
                     if text ==' View previous comments...':
                         url_anterior='https://mbasic.facebook.com'+i['href']
                         self.obtener_comentarios_anteriores(url_anterior)
+                        
+                sep=i.text.split("·") 
+                #cuando el formota del comentario es asi 'Web On Duque replied · 1 reply'
+                if len(sep) >1:
+                    tt=sep[1]
+                    tt=tt[1:] #eliminar primer caracter
+                    
+                    if tt in self.respuesta:
+                        if not i['href'] in self.url_respuestas:
+                            print("URLLLLL RESS  FFFFFFFFFFF  ", 'https://mbasic.facebook.com'+i['href'])
+                            self.url_respuestas.append('https://mbasic.facebook.com'+i['href'])
             if cont ==0:        
                 tags_img=soup.findAll("img")
                 cont_img=0
@@ -273,19 +306,10 @@ class loginComentarios:
                         path_img=tag['src']
                     cont_img+=1
                         
-                
-                sep=i.text.split("·")  
-                
-                #cuando el formota del comentario es asi 'Web On Duque replied · 1 reply'
-                if len(sep) >1:
-                    tt=sep[1]
-                    tt=tt[1:] #eliminar primer caracter
-                    if tt in self.respuesta:
-                        if not i['href'] in self.url_respuestas:
-                            self.url_respuestas.append('https://mbasic.facebook.com'+i['href'])
                     
                 if i.text in self.respuesta:
                     if not i['href'] in self.url_respuestas:
+                        print("URLLLLL RESS    ", 'https://mbasic.facebook.com',i['href'])
                         self.url_respuestas.append('https://mbasic.facebook.com'+i['href'])
             cont +=1
             cont2 =0 #reiniciamos contador para obtener el url de la siguiente pagina 'ver mas comentarios'
@@ -309,10 +333,13 @@ class loginComentarios:
                 users, urls = self.encontrar_nombre_usuarios(j, cont_com)
                 for i in range(0,len(comments)):
                     self.total +=1
+                    datos_usuario_dic=[users[i],urls[i]]
                     if not comments[i].text =='':
-                        datos_usuario_dic=[users[i],urls[i]]
+                        
                         self.comentarios_dic[comments[i].text]=datos_usuario_dic
-                
+                    else:
+                        self.imagen_cont_coment+=1
+                        self.comentarios_dic['imagen_'+str(self.imagen_cont_coment)]=datos_usuario_dic
             except:
                 break
             cont_com += 1
@@ -322,6 +349,7 @@ class loginComentarios:
     def guardar_respuesta_comentarios(self):
         print("Obteniendo comentarios respuestas")
         if  self.url_respuestas != []:
+            
             for i in self.url_respuestas:
                 self.obtener_comentarios_respuesta_comentarios(i)
         
@@ -336,6 +364,12 @@ class loginComentarios:
 
     
     def concatenar_diccionarios(self):
+        #print("RESPUESTAS FINALES  ", self.respuestas_dic)
+        #print("COMENTARIOS FINAL ", self.comentarios_dic)
         for key in self.comentarios_dic:
             if key in self.respuestas_dic:
                 self.comentarios_dic[key].append(self.respuestas_dic[key])
+                
+                
+                
+        print("\n\nFINAL", self.comentarios_dic)

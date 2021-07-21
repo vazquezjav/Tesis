@@ -40,6 +40,7 @@ def loginComentario(email,pas, url, id_usuario):
     
     total, res,id_face=log.guardar_respuesta_comentarios()
     
+    
     val=[]
     comentario_respuestas=[]
   
@@ -181,7 +182,7 @@ def loginComentario2(email,pas, url, id_usuario):
 if __name__=="__main__":
 
     
-    url='https://www.facebook.com/photo?fbid=2046800432126167&set=gm.846183586283530'
+    url='https://www.facebook.com/photo/?fbid=361271088693954&set=a.315790693241994'
     email='jav2022123@gmail.com'
     pas='marytigrearias99'
     id_usuario=10
@@ -191,39 +192,18 @@ if __name__=="__main__":
     
     
    
-    #publicacion=loginComentario(email, pas, url,id_usuario) # obtener comentarios de la apgina 
+    publicacion=loginComentario(email, pas, url,id_usuario) # obtener comentarios de la apgina 
     
     id_publicacion=94 #dentro de la base
     num_topics=3
-    lemantizado, comentarios, contadores_comentarios, id_comentarios, id_respuestas, topicos_comentarios=lda(id_publicacion, num_topics)    # obtener topicos LDA 
+    #lemantizado, comentarios, contadores_comentarios, id_comentarios, id_respuestas, topicos_comentarios=lda(id_publicacion, num_topics)    # obtener topicos LDA 
     
     
     #actualizarTopicosBase(topicos_comentarios, id_comentarios, id_respuestas, contadores_comentarios,id_publicacion)
     
-    sentimientos= predecirSentimiento(lemantizado, comentarios)     # obtener sentimientos de los comentarios lemantizado
+    #sentimientos= predecirSentimiento(lemantizado, comentarios)     # obtener sentimientos de los comentarios lemantizado
     
-    print(sentimientos)
-    positivo=0
-    negativo = 0
-    for i in sentimientos:
-        if i == 'Positivo':
-            positivo +=1
-        else:
-            negativo +=1
-    porcentaje = (positivo * 100)/(positivo+negativo)
-    if porcentaje <=15:
-        rating = 1
-    elif porcentaje >15 and porcentaje <=40:
-        rating = 2
-    elif porcentaje >40 and porcentaje <=60:
-        rating = 3
-    elif porcentaje >60 and porcentaje <=80:
-        rating = 4
-    elif porcentaje >80:
-        rating=5
-    
-    print("contadores ", positivo, "| ", negativo)
-    print("rating ", rating)
+    #
     #actualizarSentimientoBase(sentimientos, id_comentarios, id_respuestas, contadores_comentarios)
     
     

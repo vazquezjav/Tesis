@@ -17,11 +17,10 @@
 
     <p-card *ngIf="data['rol']=='user'">
         <div class="p-field p-col-12 p-md-4">
-            <label for="minmax-buttons">Url Facebook </label>
+            <label for="minmax-buttons">Url Facebook &nbsp; &nbsp; &nbsp;</label>
             <span class="p-float-label p-input-icon-right">
-                
-                <input type="text" id="inputtext-right" pInputText [(ngModel)]="url">
-                <label for="inputtext-right">Url  <i class="pi pi-facebook"></i></label>
+                <input type="text" id="inputtext-right" pInputText [(ngModel)]="url" style="width: 250%;">
+                <label for="inputtext-right">Url &nbsp; <i class="pi pi-facebook"></i></label>
                 <small class="p-error" *ngIf="enviado && !url"> &nbsp;* Campo requerido</small>
             </span>
         </div>
@@ -30,7 +29,7 @@
         <div class="p-field p-col-12 p-md-3">
             <label for="minmax-buttons">Numero Topicos </label>
             <p-inputNumber [(ngModel)]="numero_topics" mode="decimal" [showButtons]="true" inputId="minmax-buttons"
-                [min]="2" [max]="15"></p-inputNumber>
+                [min]="2" [max]="12"></p-inputNumber>
                 <small class="p-error" *ngIf="enviado && !numero_topics"> &nbsp;* Campo requerido</small>
         </div>
         <br>
