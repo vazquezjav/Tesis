@@ -54,10 +54,11 @@ class Metodos(object):
     def main(self, url, id_usuario, num_topics):
         #url = 'https://www.facebook.com/permalink.php?story_fbid=126541632901655&id=107565374799281&comment_id=127945762761242&notif_id=1623470367091416&notif_t=feed_comment&ref=notif'
         email = 'jav2022123@gmail.com'
-        pas = 'marytigrearias99'
+        pas = 'Javazq_99'
         publicacion = self.loginComentario(email, pas, url, id_usuario)
 
         lemantizado, comentarios, contadores_comentarios, id_comentarios, id_respuestas,topicos_comentarios = self.lda(publicacion, num_topics)  # obtener topicos LDA
+
         sentimientos = self.predecirSentimiento(lemantizado, comentarios)
 
         self.actualizarSentimientoTopicoBase(sentimientos,topicos_comentarios, id_comentarios, id_respuestas, contadores_comentarios,publicacion)

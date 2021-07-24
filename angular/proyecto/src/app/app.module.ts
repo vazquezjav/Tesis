@@ -72,6 +72,7 @@ import { TeamComponent } from './components/team/team.component';
 
 import { NgxSpinnerModule } from 'ngx-spinner';
 import { InterceptorService } from './services/spinner/interceptor.service';
+import { InterceptorHTTPService } from './services/interceptor-http.service';
 
 
 @NgModule({
@@ -153,7 +154,9 @@ import { InterceptorService } from './services/spinner/interceptor.service';
 
     //Token Interceptor 
     {provide: HTTP_INTERCEPTORS, useClass: TokenInterceptorService, multi:true},
-    {provide: HTTP_INTERCEPTORS, useClass:InterceptorService, multi:true}
+    {provide: HTTP_INTERCEPTORS, useClass:InterceptorService, multi:true},
+    //{provide: HTTP_INTERCEPTORS, useClass:InterceptorHTTPService, multi:true},
+
   ],
   bootstrap: [AppComponent]
 })

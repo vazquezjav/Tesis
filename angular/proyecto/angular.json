@@ -20,6 +20,8 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "deployUrl": "/",  
+
             "outputPath": "dist/proyecto",
             "index": "src/index.html",
             "main": "src/main.ts",
@@ -27,7 +29,12 @@
             "tsConfig": "tsconfig.app.json",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              {  
+                "glob": "**/*",  
+                "input": "app/resources",  
+                "output": "/siast/resources"  
+                }  
             ],
             "styles": ["src/styles.css",
               "node_modules/primeng/resources/themes/saga-blue/theme.css",
@@ -41,6 +48,14 @@
           },
           "configurations": {
             "production": {
+              "deployUrl": "/siast/",  
+		  "assets": [  
+			{  
+			  "glob": "**/*",  
+			  "input": "app/resources",  
+			  "output": "/resources"  
+			}  
+		  ]  ,
               "budgets": [
                 {
                   "type": "initial",
@@ -73,6 +88,8 @@
           "defaultConfiguration": "production"
         },
         "serve": {
+          
+          
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {

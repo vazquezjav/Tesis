@@ -9,8 +9,10 @@ import pandas as pd
 import numpy as np
 from numpy import array
 import pickle
-from keras.models import load_model
-from keras.preprocessing.sequence import pad_sequences
+#from keras.models import load_model
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+#from keras.preprocessing.sequence import pad_sequences
 
 class Sentimiento():
     
